@@ -20,9 +20,10 @@ def get_s3_client():
 def check_public_access(s3_client, bucket_name):
     try:
         acl = s3_client.get_bucket_acl(Bucket=bucket_name)
+        public_uri = "http://acs.amazonaws.com/groups/global/AllUsers"
         for grant in acl.get("Grants", []):
             grantee = grant.get("Grantee", {})
-            if grantee.get("URI") == "http://acs.amazonaws.com/groups/global/AllUsers":
+            if grantee.get("URI") == public_uri:
                 return True
         return False
     except Exception:
@@ -38,7 +39,7 @@ def save_report(results):
 
     with open("audit_report.json", "w") as f:
         json.dump(report, f, indent=4)
-    print(f"\n[OK] Report saved to audit_report.json")
+    print("\n[OK] Report saved to audit_report.json")
 
 
 def run_audit():

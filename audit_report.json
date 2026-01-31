@@ -1,0 +1,16 @@
+{
+    "timestamp": "2026-01-31T17:43:15.837075",
+    "scan_type": "S3_Bucket_ACL",
+    "findings": [
+        {
+            "bucket_name": "my-first-secure-bucket",
+            "is_public": false,
+            "status": "SECURE"
+        },
+        {
+            "bucket_name": "public-leak-bucket",
+            "is_public": true,
+            "status": "DANGER"
+        }
+    ]
+}

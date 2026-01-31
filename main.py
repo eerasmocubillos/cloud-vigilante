@@ -1,12 +1,13 @@
-import boto3
 import os
+import boto3
+import json
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 def get_s3_client():
-    """Factory to create an S3 client based on environment variables."""
     return boto3.client(
         "s3",
         endpoint_url=os.getenv("AWS_ENDPOINT_URL"),
@@ -17,10 +18,6 @@ def get_s3_client():
 
 
 def check_public_access(s3_client, bucket_name):
-    """
-    Analyzes the Access Control List (ACL) of a bucket.
-    Returns True if the 'AllUsers' group has access.
-    """
     try:
         acl = s3_client.get_bucket_acl(Bucket=bucket_name)
         for grant in acl.get("Grants", []):
@@ -28,31 +25,48 @@ def check_public_access(s3_client, bucket_name):
             if grantee.get("URI") == "http://acs.amazonaws.com/groups/global/AllUsers":
                 return True
         return False
-    except Exception as e:
-        print(f"Error checking ACL for {bucket_name}: {e}")
+    except Exception:
         return False
 
 
+def save_report(results):
+    report = {
+        "timestamp": datetime.now().isoformat(),
+        "scan_type": "S3_Bucket_ACL",
+        "findings": results,
+    }
+
+    with open("audit_report.json", "w") as f:
+        json.dump(report, f, indent=4)
+    print(f"\n[OK] Report saved to audit_report.json")
+
+
 def run_audit():
-    """Orchestrates the S3 auditing process."""
-    print("\n--- CloudVigilante: S3 Security Scan ---")
+    print("--- CloudVigilante: S3 Security Scan ---")
     s3 = get_s3_client()
+    audit_results = []
 
     try:
         buckets = s3.list_buckets().get("Buckets", [])
-        if not buckets:
-            print("[?] No buckets found in the account.")
-            return
-
         for bucket in buckets:
             name = bucket["Name"]
             is_public = check_public_access(s3, name)
 
-            status = "[!] PUBLIC" if is_public else "[OK] PRIVATE"
-            print(f"{status} | Bucket: {name}")
+            audit_results.append(
+                {
+                    "bucket_name": name,
+                    "is_public": is_public,
+                    "status": "DANGER" if is_public else "SECURE",
+                }
+            )
+
+            status_tag = "[!]" if is_public else "[OK]"
+            print(f"{status_tag} Scanned: {name}")
+
+        save_report(audit_results)
 
     except Exception as e:
-        print(f"[E] Critical error during scan: {e}")
+        print(f"[E] Error: {e}")
 
 
 if __name__ == "__main__":

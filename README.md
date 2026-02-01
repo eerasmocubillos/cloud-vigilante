@@ -16,11 +16,17 @@ CloudVigilante is a security auditing tool written in Python. It helps detect pu
 ## Setup and Usage
 
 1. Clone the repository:
+```bash
    git clone https://github.com/eerasmocubillos/cloud-vigilante.git
+```
 
 2. Install dependencies:
+```bash
    pip install -r requirements.txt
+```
 
 3. Run with Docker:
+```bash
    docker build -t cloud-vigilante .
    docker run --rm --network="host" --env-file .env cloud-vigilante
+```
